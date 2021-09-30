@@ -11,6 +11,18 @@ const useStyles = makeStyles(theme => ({
     }
 }))
 
+const taskFilter = (tasks, settings) => {
+    let sortedTasks = [ ...tasks ];
+    sortedTasks = sortedTasks.filter(item => item.title.includes(settings.name))
+    settings.sort.forEach((key) => sortedTasks = sortedTasks.sort((a, b) => {
+        if(a[key] < b[key]) { return -1; }
+        if(a[key] > b[key]) { return 1; }
+        return 0;
+    }));
+    sortedTasks = sortedTasks.sort((a, b) => b.priority - a.priority);
+    return sortedTasks;
+}
+
 const ListEmptyMessage = ({ title, content }) => {
 
     const { list__empty_message } = useStyles();
@@ -23,20 +35,27 @@ const ListEmptyMessage = ({ title, content }) => {
     )
 }
 
-function Index({ tasks }){
+function Index({ tasks, filters }){
     return (
         <Layout title={"Мои задачи"}>
             {
-                tasks.length
-                    ? tasks.map((item  , key) => <Task key={key} {...item} />)
-                    : <ListEmptyMessage title={"Список задач пока что пуст"}/>
+                taskFilter(tasks, filters).length
+                    ? taskFilter(tasks, filters).map((item) => <Task key={item.slug} {...item} />)
+                    : <ListEmptyMessage title={"Список задач пусть"} content={"Попробуйте выбрать другие настройки фильтров или добавить новую задачу"}/>
             }
         </Layout>
     )
 }
 
-const mapStateToProps = (state) => {
-    return { ...state.tasks };
+const mapStateToProps = ({ tasks, filter }) => {
+    console.log(tasks)
+    return {
+        ...tasks,
+        filters: {
+            name: filter.name,
+            sort: filter.filters
+        }
+    };
 }
 
 export default connect(mapStateToProps)(Index);

@@ -20,12 +20,13 @@ const useStyles = makeStyles(_ => ({
     }
 }));
 
-const Task = ({ idx, task, handleChange }) => {
+const Task = ({ idx, task, handleChange, removeTask }) => {
 
     const { subtask, control, btn } = useStyles();
 
     const [body, setBody] = useState(task);
     const observer = useObserver(setBody);
+
 
     const popoverProps = {
         button: (triggers) => (
@@ -37,7 +38,7 @@ const Task = ({ idx, task, handleChange }) => {
             {
                 icon: <Delete/>,
                 title: "Удалить",
-                fn: () => {}
+                fn: () => removeTask({ idx })
             }
         ]
     }
@@ -50,7 +51,7 @@ const Task = ({ idx, task, handleChange }) => {
                 required
                 className={control}
                 label={"Задача"}
-                value={task.value}
+                value={task.title}
                 onChange={observer.handler('title')}
             />
             <PopoverWrapper {...popoverProps} />
@@ -68,7 +69,10 @@ function SubtaskController({ tasks, setTasks }){
     const handleClick = () => {
         setTasks(tasks => ([
             ...tasks,
-            instance
+            {
+                ...instance,
+                slug: (Math.random() + 1).toString(36).substring(7),
+            }
         ]));
     }
 
@@ -82,6 +86,13 @@ function SubtaskController({ tasks, setTasks }){
         )
     }
 
+    const removeHandler = ({ idx }) => {
+        setTasks(tasks => ([
+            ...tasks.slice(0, idx),
+            ...tasks.slice(idx + 1),
+        ]));
+    }
+
     return (
         <>
             <Button variant={"outlined"}
@@ -89,7 +100,13 @@ function SubtaskController({ tasks, setTasks }){
                     onClick={handleClick}
             > Добавить подзадачу </Button>
             {
-                tasks.map((task, idx) => <Task key={idx} handleChange={handleChange} task={task} idx={idx} />)
+                tasks.map((task, idx) => <Task
+                    key={task.slug}
+                    handleChange={handleChange}
+                    task={task}
+                    idx={idx}
+                    removeTask={removeHandler}
+                />)
             }
         </>
     )

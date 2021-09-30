@@ -16,7 +16,10 @@ import clsx from "clsx";
 import MDEditor from "@uiw/react-md-editor";
 import ruLocale from 'date-fns/locale/ru';
 import {connect} from "react-redux";
-import {REMOVE_TASK} from "../../store/tasks/actions.js";
+import {CHANGE_PRIORITY_TASK, EDIT_TASK, REMOVE_TASK} from "../../store/tasks/actions.js";
+import {useHistory} from "react-router-dom";
+import {useEffect} from "react";
+import update from "react-addons-update";
 
 const useStyles = makeStyles(_ => ({
     task: {
@@ -30,9 +33,11 @@ const useStyles = makeStyles(_ => ({
     }
 }))
 
-const Action = ({ actionsRemove, slug }) => {
+const Action = ({actionsRemove, actionsPriorityChange, slug, priority}) => {
 
-    console.log(actionsRemove)
+    const history = useHistory();
+
+    console.log(priority)
 
     const props = {
         button: (triggers) => (
@@ -50,13 +55,13 @@ const Action = ({ actionsRemove, slug }) => {
                 icon: <Edit/>,
                 title: "Изменить",
                 fn: () => {
+                    history.push(`/edit/${slug}`)
                 }
             },
             {
-                icon: <Star/>,
-                title: "Приоритет",
-                fn: () => {
-                }
+                icon: <Star color={priority ? 'warning' : "action"}/>,
+                title: "Избранное",
+                fn: () => actionsPriorityChange(slug)
             },
         ]
     }
@@ -64,39 +69,81 @@ const Action = ({ actionsRemove, slug }) => {
     return <PopoverWrapper {...props} />
 }
 
-const Subtask = ({status, title}) => {
+const Subtask = ({changeStatus, status, idx, title, slug}) => {
 
     const {
         subtask
     } = useStyles();
 
+    const handleStatusChange = e => {
+        changeStatus({
+            idx,
+            task: {
+                title,
+                slug,
+                status: e.target.checked
+            }
+        })
+    }
+
     return (
         <FormGroup className={subtask}>
-            <FormControlLabel control={<Checkbox defaultChecked={status} />} label={title} />
+            <FormControlLabel control={<Checkbox defaultChecked={status} onChange={handleStatusChange}/>}
+                              label={title}/>
         </FormGroup>
     )
 }
 
-function Task({ removeTask, className, ...props}) {
+function Task({removeTask, changeTaskPriority, editTask, className, ...props}) {
 
     const {task} = useStyles();
+
+    const content = props.content || null;
+    const tasks = props.tasks || [];
+
+    const handleSubtaskStatusChange = ({idx, task}) => {
+        const {
+            slug, priority, title, content, created_at, tasks
+        } = props;
+        tasks[idx] = task;
+        const payload = {
+            slug,
+            priority,
+            title,
+            content,
+            created_at,
+            tasks
+        }
+        editTask(payload.slug, payload);
+    }
 
     return (
         <Card className={clsx(task, className)}>
             <CardHeader
                 title={props.title}
-                subheader={format(props.created_at, "dd MMMM, yyyy", {locale: ruLocale})}
-                action={<Action slug={props.slug} actionsRemove={removeTask} />}
+                subheader={format(new Date(props.created_at), "dd MMMM, yyyy", {locale: ruLocale})}
+                action={<Action
+                    slug={props.slug}
+                    priority={props.priority}
+                    actionsRemove={removeTask}
+                    actionsPriorityChange={changeTaskPriority}
+                />}
+                titleTypographyProps={{variant: "body1"}}
+                avatar={props.priority && <Star color={'warning'}/>}
             />
             {
-                !props.content && !props.tasks ? null :
+                !content && !tasks.length ? null :
                     <CardContent>
-                        <Typography>
-                            <MDEditor.Markdown source={props.content || ""} linkTarget="_blank"/>
-                        </Typography>
                         {
-                            (props.tasks || [])
-                                .map((task, key) => <Subtask key={key} {...task} />)
+                            content && (
+                                <Typography>
+                                    <MDEditor.Markdown source={props.content || null} linkTarget="_blank"/>
+                                </Typography>
+                            )
+                        }
+                        {
+                            tasks.map((task, key) => <Subtask key={task.slug} idx={key}
+                                                              changeStatus={handleSubtaskStatusChange} {...task} />)
                         }
                     </CardContent>
             }
@@ -105,7 +152,9 @@ function Task({ removeTask, className, ...props}) {
 }
 
 const mapDispatchToProps = (dispatch) => ({
-    removeTask: (payload) => dispatch(REMOVE_TASK(payload))
+    removeTask: (payload) => dispatch(REMOVE_TASK(payload)),
+    editTask: (slug, body) => dispatch(EDIT_TASK(slug, body)),
+    changeTaskPriority: (slug) => dispatch(CHANGE_PRIORITY_TASK(slug))
 })
 
 export default connect(null, mapDispatchToProps)(Task);

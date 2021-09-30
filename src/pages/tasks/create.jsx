@@ -12,7 +12,8 @@ import {useHistory} from "react-router-dom";
 
 
 const initBody = {
-    title: ""
+    title: "",
+    priority: false
 }
 
 const useStyles = makeStyles(_ => ({
@@ -36,7 +37,8 @@ function Create({ addTask }){
     const observer = useObserver(setBody);
     const history = useHistory();
 
-    const handleSubmit = () => {
+    const handleSubmit = (e) => {
+        e.preventDefault();
         const payload = {
             slug: (Math.random() + 1).toString(36).substring(7),
             ...body,
@@ -50,7 +52,7 @@ function Create({ addTask }){
 
     return (
         <Layout type={'form'} title={"Создание задачи"}>
-            <Box component={"form"} noValidate autoComplete="off">
+            <Box component={"form"} noValidate autoComplete="off" onSubmit={handleSubmit}>
                 <TextField
                     required
                     className={control}
@@ -60,7 +62,7 @@ function Create({ addTask }){
                 <MDEditor value={markdown} onChange={setMarkdown} className={clsx(control, editor)} />
                 <SubtaskController tasks={tasks} setTasks={setTasks} />
                 <div className={form__footer}>
-                    <Button variant={"contained"} color={"success"} onClick={handleSubmit}>Сохранить</Button>
+                    <Button variant={"contained"} color={"success"} type={'submit'}>Сохранить</Button>
                 </div>
             </Box>
         </Layout>

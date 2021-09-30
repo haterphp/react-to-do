@@ -12,7 +12,7 @@ export const baseSettings = {
     }
 }
 
-const PopoverListItem = ({title, onClose, icon = null, fn = () => {}, ...props}) => {
+const PopoverListItem = ({title, onClose, icon = null, fn = () => {}, mixin = null, ...props}) => {
 
     const handleClick = e => {
         onClose();
@@ -25,13 +25,19 @@ const PopoverListItem = ({title, onClose, icon = null, fn = () => {}, ...props})
                 {icon}
             </ListItemIcon>
             <ListItemText primary={title}/>
+            { mixin }
         </MenuItem>
     )
 }
 
-function PopoverWrapper({button = null, list = [], settings = baseSettings}) {
+function PopoverWrapper({button = null, list = [], settings = {}}) {
 
     const SortButton = button;
+
+    const getSettings = () => ({
+        ...baseSettings,
+        ...settings
+    })
 
     return (
         <PopupState variant="popover">
@@ -40,7 +46,7 @@ function PopoverWrapper({button = null, list = [], settings = baseSettings}) {
                     {<SortButton {...bindTrigger(popupState)} />}
                     <Menu
                         {...bindMenu(popupState)}
-                        {...settings}>
+                        {...getSettings()}>
                         {
                             list.map((props, key) =>
                                 <PopoverListItem
